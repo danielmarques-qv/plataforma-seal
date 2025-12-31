@@ -1,0 +1,94 @@
+# 🎖️ PROJETO SEAL: ESPECIFICAÇÕES TÉCNICAS COMPLETAS
+
+## 1. ARQUITETURA E STACK
+- **Backend:** Python 3.11+ (Poetry) | Django 5 + Django Ninja (API REST)
+- **Frontend:** React + Vite + TypeScript | Tailwind CSS | Zustand (State) | TanStack Query
+- **Banco de Dados:** Supabase (PostgreSQL) - **Schema: `seal`**
+- **Autenticação:** Supabase Auth (Validação de JWT no Backend)
+
+---
+
+## 2. DICIONÁRIO DE DADOS (SCHEMA `seal`)
+
+### 2.1. Tabela: `profiles`
+Centraliza o estado do usuário e gamificação.
+- `id` (UUID, PK): Referência ao auth.users.
+- `onboarding_step` (Int): 0 (Cadastro), 1 (Kickoff), 2 (Contrato), 3 (Operacional).
+- `full_name`, `phone`, `pix_key` (Text): Dados de pagamento e contato.
+- `financial_goal` (Numeric): Meta mensal (Input de Sonhos).
+- `current_commission` (Numeric): Soma de comissões ganhas.
+- `families_saved_count` (Int): Soma de leads em status 'RESGATE'.
+- `heptagram_scores` (JSONB): Notas do quizz (ex: `{"tecnica": 8, "venda": 5...}`).
+- `dream_description` (Text): Texto sobre os objetivos pessoais.
+
+### 2.2. Tabela: `crm_leads`
+- `id` (BigInt, PK).
+- `strategist_id` (FK -> profiles.id).
+- `status` (Text): 'RADAR', 'COMBATE', 'EXTRAÇÃO', 'RESGATE'.
+- `name`, `phone`, `email`, `potential_value`.
+
+### 2.3. Tabela: `training_modules`
+- `id` (BigInt, PK).
+- `title`, `video_url`, `order_index`.
+- `required_step` (Int): Step mínimo para visualizar.
+
+### 2.4. Outras Tabelas
+- `commissions`: `lead_id`, `amount`, `status` ('PENDING', 'PAID').
+- `resources`: `title`, `category`, `file_url` (Scripts e Playbooks).
+
+---
+
+## 3. IDENTIDADE VISUAL (TACTICAL UI)
+- **Cores:** - Fundo: `#1D1D1B` | Surface: `#23262B`
+  - Primária: `#785942` (Terra) | Destaque: `#4A3728` (Café)
+  - Texto: `#F2EFE9` (Creme) | Detalhes: `#C4A88E` (Areia)
+- **Tipografia:** `Archivo Black` (Headers/Hype) | `Roboto` (Textos).
+- **Estilo:** Bordas retas (rounded: 0px), ícones táticos (Lucide-React).
+
+---
+
+## 4. JORNADA DO USUÁRIO E TELAS (UX FLOW)
+
+### FASE 0: O RECRUTA (onboarding_step = 0)
+**Tela: Cadastro Inicial & Sonhos**
+- Formulário para `full_name`, `phone` e `pix_key`.
+- Seção "Input de Sonhos": Slider para `financial_goal` e campo de texto para `dream_description`.
+- **Quizz Heptagrama:** 7 perguntas de 1 a 10. O resultado gera um Radar Chart imediato.
+- *Ação:* Ao salvar, `onboarding_step` vai para 1.
+
+### FASE 1: BRIEFING (onboarding_step = 1)
+**Tela: Onboarding - Kickoff**
+- Botão "AGENDAR REUNIÃO DE KICKOFF" (Link Externo).
+- Card de status: "Aguardando confirmação de presença".
+- *Ação:* Após confirmação, `onboarding_step` vai para 2.
+
+### FASE 2: ENGAJAMENTO (onboarding_step = 2)
+**Tela: Onboarding - Contrato**
+- Visualização dos Primeiros Vídeos de Treinamento (liberados para step 2).
+- Botão "ASSINAR CONTRATO DE ESTRATEGISTA" (Link DocuSign).
+- *Ação:* Após assinatura, `onboarding_step` vai para 3.
+
+### FASE 3: OPERACIONAL (onboarding_step = 3) - ACESSO TOTAL
+**Tela 1: War Room (Dashboard)**
+- KPI 1: "FAMÍLIAS SALVAS PELO SEAL [NOME]" (Contador gigante).
+- KPI 2: "EVOLUÇÃO DE REMUNERAÇÃO" (Barra de progresso: Comissão Atual vs. Meta de Sonho).
+- Carrossel de "Missões Atuais" (Vídeos pendentes).
+
+**Tela 2: Frontline (CRM Kanban)**
+- 4 Colunas: **RADAR** (Frio), **COMBATE** (Reunião), **EXTRAÇÃO** (Proposta), **RESGATE** (Venda).
+- Drag & Drop para mover leads.
+- Botão "+" para novo Lead (Nome/Telefone/Valor).
+
+**Tela 3: Arsenal (Treinamentos & Scripts)**
+- Lista de vídeos filtrados por ordem.
+- Aba de "Scripts": Links para download de documentos de apoio.
+
+**Tela 4: Regras de Comissionamento**
+- Texto explicativo estático + Tabela de extrato de comissões pendentes.
+
+---
+
+## 5. REGRAS DE NEGÓCIO (BACKEND)
+1. **Segurança (RLS):** Usuários só acessam leads onde `strategist_id == auth.uid()`.
+2. **Cadeados:** Endpoints de CRM e Resources devem retornar `403 Forbidden` se `onboarding_step < 3`.
+3. **Cálculo de Hype:** O contador de famílias salvas deve ser atualizado via Trigger no DB ou lógica no `POST/PATCH` do CRM.

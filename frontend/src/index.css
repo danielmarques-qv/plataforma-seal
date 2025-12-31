@@ -1,0 +1,59 @@
+@import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Archivo+Black&family=Roboto:wght@300;400;500;700&display=swap');
+
+@theme {
+  --color-background: #1D1D1B;
+  --color-surface: #23262B;
+  --color-primary: #785942;
+  --color-accent: #4A3728;
+  --color-cream: #F2EFE9;
+  --color-sand: #C4A88E;
+  
+  --font-family-display: 'Archivo Black', sans-serif;
+  --font-family-body: 'Roboto', sans-serif;
+}
+
+:root {
+  font-family: 'Roboto', sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  color-scheme: dark;
+  color: #F2EFE9;
+  background-color: #1D1D1B;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background-color: #1D1D1B;
+}
+
+* {
+  border-radius: 0 !important;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+::selection {
+  background-color: #785942;
+  color: #F2EFE9;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #1D1D1B;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #785942;
+}
