@@ -135,31 +135,39 @@ def mark_module_complete(request, module_id: int):
     OPERAÇÃO: Missão Cumprida.
     """
     profile = request.auth
+    print(f"[Training] Completando módulo {module_id} para perfil {profile.id}")
     
-    module = get_object_or_404(TrainingModule, id=module_id, is_active=True)
-    
-    # Verifica se está bloqueado
-    if module.required_step > profile.onboarding_step:
-        raise HttpError(403, "ACESSO NEGADO: Módulo bloqueado.")
-    
-    # Cria ou atualiza progresso
-    progress, created = ModuleProgress.objects.get_or_create(
-        profile=profile,
-        module=module,
-        defaults={'completed': True, 'completed_at': timezone.now()}
-    )
-    
-    if not created and not progress.completed:
-        progress.completed = True
-        progress.completed_at = timezone.now()
-        progress.save()
-    
-    return {
-        "status": "MISSÃO CUMPRIDA",
-        "message": f"Módulo '{module.title}' concluído com sucesso.",
-        "module_id": module.id,
-        "completed_at": progress.completed_at
-    }
+    try:
+        module = get_object_or_404(TrainingModule, id=module_id, is_active=True)
+        print(f"[Training] Módulo encontrado: {module.title}")
+        
+        # Verifica se está bloqueado
+        if module.required_step > profile.onboarding_step:
+            raise HttpError(403, "ACESSO NEGADO: Módulo bloqueado.")
+        
+        # Cria ou atualiza progresso
+        progress, created = ModuleProgress.objects.get_or_create(
+            profile=profile,
+            module=module,
+            defaults={'completed': True, 'completed_at': timezone.now()}
+        )
+        print(f"[Training] Progresso criado: {created}, completed: {progress.completed}")
+        
+        if not created and not progress.completed:
+            progress.completed = True
+            progress.completed_at = timezone.now()
+            progress.save()
+            print(f"[Training] Progresso atualizado")
+        
+        return {
+            "status": "MISSÃO CUMPRIDA",
+            "message": f"Módulo '{module.title}' concluído com sucesso.",
+            "module_id": module.id,
+            "completed_at": progress.completed_at
+        }
+    except Exception as e:
+        print(f"[Training] Erro ao completar módulo: {e}")
+        raise
 
 
 @router.get("/pending", response=List[TrainingModuleWithProgressSchema], auth=supabase_auth)

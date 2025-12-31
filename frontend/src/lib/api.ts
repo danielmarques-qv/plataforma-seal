@@ -57,7 +57,7 @@ export const crmApi = {
 export const trainingApi = {
   getOverview: () => apiRequest<TrainingOverview>('/training/modules'),
   getModule: (id: number) => apiRequest<TrainingModule>(`/training/modules/${id}`),
-  completeModule: (id: number) => apiRequest<void>(`/training/modules/${id}/complete`, { method: 'POST' }),
+  completeModule: (id: number) => apiRequest<{ status: string; message: string }>(`/training/modules/${id}/complete`, { method: 'POST' }),
   getPending: () => apiRequest<TrainingModule[]>('/training/pending'),
 }
 
@@ -79,8 +79,10 @@ export const commissionsApi = {
 export const onboardingApi = {
   checkSchedule: () => apiRequest<ScheduleCheck>('/onboarding/check-schedule'),
   confirmSchedule: () => apiRequest<{ status: string; message: string }>('/onboarding/confirm-schedule', { method: 'POST' }),
-  // DEV ONLY - simula agendamento
+  // DEV ONLY
   devSimulateSchedule: () => apiRequest<{ status: string; message: string }>('/onboarding/dev-simulate-schedule', { method: 'POST' }),
+  devCompleteTraining: () => apiRequest<{ status: string; message: string }>('/onboarding/dev-complete-training', { method: 'POST' }),
+  devSimulateContract: () => apiRequest<{ status: string; message: string }>('/onboarding/dev-simulate-contract', { method: 'POST' }),
 }
 
 export interface ScheduleCheck {

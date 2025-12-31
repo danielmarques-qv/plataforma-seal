@@ -160,6 +160,65 @@ def dev_simulate_schedule(request):
     }
 
 
+@router.post("/dev-complete-training", response=MessageSchema, auth=supabase_auth)
+def dev_complete_training(request):
+    """
+    [DEV ONLY] Marca todos os treinamentos disponíveis como concluídos.
+    Remove em produção!
+    """
+    from django.conf import settings
+    from apps.training.models import TrainingModule, ModuleProgress
+    from django.utils import timezone
+    
+    if not settings.DEBUG:
+        return {"status": "error", "message": "Endpoint disponível apenas em desenvolvimento"}
+    
+    profile = request.auth
+    
+    # Busca todos os módulos disponíveis para o step atual
+    available_modules = TrainingModule.objects.filter(
+        is_active=True,
+        required_step__lte=profile.onboarding_step
+    )
+    
+    count = 0
+    for module in available_modules:
+        progress, created = ModuleProgress.objects.get_or_create(
+            profile=profile,
+            module=module,
+            defaults={'completed': True, 'completed_at': timezone.now()}
+        )
+        if not progress.completed:
+            progress.completed = True
+            progress.completed_at = timezone.now()
+            progress.save()
+        count += 1
+    
+    return {"status": "ok", "message": f"{count} módulos marcados como concluídos"}
+
+
+@router.post("/dev-simulate-contract", response=MessageSchema, auth=supabase_auth)
+def dev_simulate_contract(request):
+    """
+    [DEV ONLY] Simula assinatura de contrato para testes locais.
+    Remove em produção!
+    """
+    from django.conf import settings
+    
+    if not settings.DEBUG:
+        return {"status": "error", "message": "Endpoint disponível apenas em desenvolvimento"}
+    
+    profile = request.auth
+    
+    # Avança o step de Contrato para Operacional
+    if profile.onboarding_step == Profile.STEP_CONTRATO:
+        profile.onboarding_step = Profile.STEP_OPERACIONAL
+        profile.save()
+        return {"status": "ok", "message": "Contrato simulado com sucesso! Acesso total liberado."}
+    
+    return {"status": "error", "message": f"Step atual: {profile.onboarding_step}. Esperado: {Profile.STEP_CONTRATO}"}
+
+
 @router.post("/confirm-schedule", response=MessageSchema, auth=supabase_auth)
 def confirm_schedule(request):
     """
