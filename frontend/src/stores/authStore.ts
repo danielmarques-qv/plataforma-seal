@@ -30,7 +30,13 @@ export const useAuthStore = create<AuthState>((set, _get) => ({
     try {
       set({ loading: true, error: null })
       
-      const { data: { session } } = await supabase.auth.getSession()
+      // Timeout para evitar que fique pendurado
+      const sessionPromise = supabase.auth.getSession()
+      const timeoutPromise = new Promise<{ data: { session: null } }>((resolve) => {
+        setTimeout(() => resolve({ data: { session: null } }), 5000)
+      })
+      
+      const { data: { session } } = await Promise.race([sessionPromise, timeoutPromise])
       
       if (session) {
         set({ user: session.user, session })
@@ -59,6 +65,7 @@ export const useAuthStore = create<AuthState>((set, _get) => ({
         }
       })
     } catch (error) {
+      console.error('Auth init error:', error)
       set({ error: 'Erro ao inicializar autenticação' })
     } finally {
       set({ loading: false })
