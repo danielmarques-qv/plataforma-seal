@@ -22,6 +22,7 @@ class ProfileOutSchema(Schema):
     """Schema de saída para dados do perfil."""
     id: UUID
     onboarding_step: int
+    email: Optional[str] = None
     full_name: Optional[str] = None
     phone: Optional[str] = None
     pix_key: Optional[str] = None

@@ -1,38 +1,96 @@
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Calendar, Clock, CheckCircle } from 'lucide-react'
+import { Calendar, Clock, CheckCircle, Loader2 } from 'lucide-react'
 import { useAuthStore } from '../../stores/authStore'
-import { profileApi } from '../../lib/api'
+import { onboardingApi } from '../../lib/api'
 import { Button } from '../../components/ui'
 import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui'
+
+const CALENDLY_URL = 'https://calendly.com/danielmarques-quartavia/30min'
 
 export function Step1Page() {
   const navigate = useNavigate()
   const { profile, refreshProfile } = useAuthStore()
   
   const [loading, setLoading] = useState(false)
+  const [checking, setChecking] = useState(false)
   const [error, setError] = useState('')
-  const [kickoffScheduled, setKickoffScheduled] = useState(false)
+  const [calendlyOpened, setCalendlyOpened] = useState(false)
+  const [scheduleConfirmed, setScheduleConfirmed] = useState(false)
+  const [scheduleTime, setScheduleTime] = useState<string | null>(null)
 
-  const handleScheduleKickoff = () => {
-    // Link externo para agendamento (Calendly, Google Calendar, etc.)
-    window.open('https://calendly.com/seu-link-kickoff', '_blank')
-    setKickoffScheduled(true)
+  // Verifica se já tem agendamento
+  const checkSchedule = useCallback(async () => {
+    try {
+      setChecking(true)
+      const result = await onboardingApi.checkSchedule()
+      
+      if (result.has_schedule) {
+        setScheduleConfirmed(true)
+        setScheduleTime(result.schedule_time)
+      }
+    } catch (err) {
+      console.error('Erro ao verificar agendamento:', err)
+    } finally {
+      setChecking(false)
+    }
+  }, [])
+
+  // Verifica agendamento ao montar e periodicamente após abrir Calendly
+  useEffect(() => {
+    checkSchedule()
+  }, [checkSchedule])
+
+  useEffect(() => {
+    let interval: ReturnType<typeof setInterval> | null = null
+    
+    if (calendlyOpened && !scheduleConfirmed) {
+      // Polling a cada 5 segundos após abrir o Calendly
+      interval = setInterval(() => {
+        checkSchedule()
+      }, 5000)
+    }
+    
+    return () => {
+      if (interval) clearInterval(interval)
+    }
+  }, [calendlyOpened, scheduleConfirmed, checkSchedule])
+
+  const handleOpenCalendly = () => {
+    window.open(CALENDLY_URL, '_blank')
+    setCalendlyOpened(true)
   }
 
-  const handleConfirmKickoff = async () => {
+  const handleConfirmAndProceed = async () => {
     setError('')
     setLoading(true)
 
     try {
-      await profileApi.completeStep1()
-      await refreshProfile()
-      navigate('/')
+      const result = await onboardingApi.confirmSchedule()
+      
+      if (result.status === 'ok') {
+        await refreshProfile()
+        navigate('/')
+      } else {
+        setError('Agendamento ainda não detectado. Por favor, complete o agendamento no Calendly.')
+      }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erro ao confirmar kickoff')
+      setError(err instanceof Error ? err.message : 'Erro ao confirmar agendamento')
     } finally {
       setLoading(false)
     }
+  }
+
+  const formatScheduleTime = (isoString: string | null) => {
+    if (!isoString) return ''
+    const date = new Date(isoString)
+    return date.toLocaleString('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    })
   }
 
   return (
@@ -75,30 +133,57 @@ export function Step1Page() {
                 </ul>
               </div>
 
-              {!kickoffScheduled ? (
+              {scheduleConfirmed ? (
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3 text-green-400 bg-green-900/20 p-4 border border-green-800">
+                    <CheckCircle className="w-6 h-6" />
+                    <div>
+                      <span className="font-medium">Reunião agendada!</span>
+                      {scheduleTime && (
+                        <p className="text-sm text-green-300 mt-1">
+                          {formatScheduleTime(scheduleTime)}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <Button 
+                    onClick={handleConfirmAndProceed}
+                    size="lg" 
+                    className="w-full"
+                    isLoading={loading}
+                  >
+                    Continuar para Próxima Etapa
+                  </Button>
+                </div>
+              ) : calendlyOpened ? (
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3 text-yellow-400 bg-yellow-900/20 p-4 border border-yellow-800">
+                    {checking ? (
+                      <Loader2 className="w-6 h-6 animate-spin" />
+                    ) : (
+                      <Clock className="w-6 h-6" />
+                    )}
+                    <span>Aguardando confirmação do agendamento...</span>
+                  </div>
+                  
+                  <Button 
+                    onClick={handleOpenCalendly}
+                    variant="outline"
+                    size="lg" 
+                    className="w-full"
+                  >
+                    Abrir Calendly Novamente
+                  </Button>
+                </div>
+              ) : (
                 <Button 
-                  onClick={handleScheduleKickoff}
+                  onClick={handleOpenCalendly}
                   size="lg" 
                   className="w-full"
                 >
                   Agendar Reunião de Kickoff
                 </Button>
-              ) : (
-                <div className="space-y-4">
-                  <div className="flex items-center gap-3 text-green-400 bg-green-900/20 p-4 border border-green-800">
-                    <CheckCircle className="w-6 h-6" />
-                    <span>Link de agendamento aberto! Confirme quando concluir.</span>
-                  </div>
-                  
-                  <Button 
-                    onClick={handleConfirmKickoff}
-                    size="lg" 
-                    className="w-full"
-                    isLoading={loading}
-                  >
-                    Confirmar Agendamento Realizado
-                  </Button>
-                </div>
               )}
 
               {error && (
@@ -106,12 +191,34 @@ export function Step1Page() {
                   {error}
                 </div>
               )}
+
+              {/* DEV ONLY - Botão de teste */}
+              {import.meta.env.DEV && (
+                <div className="border-t border-primary/30 pt-4 mt-4">
+                  <p className="text-sand text-xs mb-2">🛠️ Modo Desenvolvimento:</p>
+                  <Button 
+                    onClick={async () => {
+                      try {
+                        await onboardingApi.devSimulateSchedule()
+                        checkSchedule()
+                      } catch (err) {
+                        setError('Erro ao simular agendamento')
+                      }
+                    }}
+                    variant="outline"
+                    size="sm"
+                    className="w-full"
+                  >
+                    Simular Agendamento (DEV)
+                  </Button>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
 
         <p className="text-center text-sand text-sm mt-6">
-          Após confirmar o agendamento, você avançará para a próxima fase.
+          Use o mesmo email do cadastro para que possamos identificar seu agendamento.
         </p>
       </div>
     </div>

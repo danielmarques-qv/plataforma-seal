@@ -75,10 +75,24 @@ export const commissionsApi = {
   getList: (status?: string) => apiRequest<Commission[]>(`/commissions/list${status ? `?status=${status}` : ''}`),
 }
 
+// Onboarding API
+export const onboardingApi = {
+  checkSchedule: () => apiRequest<ScheduleCheck>('/onboarding/check-schedule'),
+  confirmSchedule: () => apiRequest<{ status: string; message: string }>('/onboarding/confirm-schedule', { method: 'POST' }),
+  // DEV ONLY - simula agendamento
+  devSimulateSchedule: () => apiRequest<{ status: string; message: string }>('/onboarding/dev-simulate-schedule', { method: 'POST' }),
+}
+
+export interface ScheduleCheck {
+  has_schedule: boolean
+  schedule_time: string | null
+}
+
 // Types
 export interface Profile {
   id: string
   onboarding_step: number
+  email: string | null
   full_name: string | null
   phone: string | null
   pix_key: string | null

@@ -9,6 +9,7 @@ from apps.crm.api import router as crm_router
 from apps.training.api import router as training_router
 from apps.resources.api import router as resources_router
 from apps.commissions.api import router as commissions_router
+from apps.onboarding.api import router as onboarding_router
 
 api = NinjaAPI(
     title="SEAL Platform API",
@@ -22,6 +23,7 @@ api.add_router("/crm/", crm_router, tags=["Frontline CRM"])
 api.add_router("/training/", training_router, tags=["Treinamentos"])
 api.add_router("/resources/", resources_router, tags=["Arsenal"])
 api.add_router("/commissions/", commissions_router, tags=["Comissões"])
+api.add_router("/onboarding/", onboarding_router, tags=["Onboarding"])
 
 
 @api.exception_handler(HttpError)
