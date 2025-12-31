@@ -8,7 +8,7 @@ class CommissionAdmin(admin.ModelAdmin):
     list_filter = ['status', 'created_at']
     search_fields = ['strategist__full_name', 'lead__name']
     list_editable = ['status']
-    readonly_fields = ['id', 'created_at', 'updated_at']
+    readonly_fields = ['id', 'created_at']
     raw_id_fields = ['strategist', 'lead']
     ordering = ['-created_at']
     
@@ -21,7 +21,7 @@ class CommissionAdmin(admin.ModelAdmin):
             'classes': ('collapse',)
         }),
         ('Datas', {
-            'fields': ('created_at', 'updated_at'),
+            'fields': ('created_at',),
             'classes': ('collapse',)
         }),
     )

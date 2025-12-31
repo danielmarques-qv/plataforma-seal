@@ -10,6 +10,7 @@ from django.db import transaction
 
 from core.auth import supabase_auth, require_operational
 from apps.profiles.models import Profile
+from apps.commissions.models import Commission
 from .models import Lead
 from .schemas import (
     LeadCreateSchema,
@@ -18,6 +19,44 @@ from .schemas import (
     LeadMoveSchema,
     KanbanBoardSchema,
 )
+from decimal import Decimal
+
+
+def create_commission_for_lead(profile: Profile, lead: Lead):
+    """
+    Cria uma comissão automaticamente quando lead vai para RESGATE.
+    Valor = potential_value × commission_percentage / 100
+    Atualiza current_commission do profile.
+    """
+    # Verifica se já existe comissão para este lead
+    existing = Commission.objects.filter(strategist=profile, lead=lead).first()
+    if existing:
+        return existing
+    
+    # Calcula valor da comissão
+    commission_rate = Decimal(str(profile.commission_percentage)) / Decimal('100')
+    commission_amount = Decimal(str(lead.potential_value)) * commission_rate
+    
+    # Cria comissão com status PENDING
+    commission = Commission.objects.create(
+        strategist=profile,
+        lead=lead,
+        amount=commission_amount,
+        status=Commission.STATUS_PENDING,
+        description=f"Comissão automática - Lead: {lead.name}"
+    )
+    
+    # Atualiza current_commission do profile (soma de todas as comissões pendentes + aprovadas)
+    from django.db.models import Sum
+    total = Commission.objects.filter(
+        strategist=profile,
+        status__in=[Commission.STATUS_PENDING, Commission.STATUS_APPROVED]
+    ).aggregate(total=Sum('amount'))['total'] or Decimal('0')
+    
+    profile.current_commission = total
+    profile.save()
+    
+    return commission
 
 router = Router()
 
@@ -109,10 +148,11 @@ def create_lead(request, payload: LeadCreateSchema):
         status=payload.status
     )
     
-    # Se criado diretamente em RESGATE, incrementa contador
+    # Se criado diretamente em RESGATE, incrementa contador e cria comissão
     if lead.status == Lead.STATUS_RESGATE:
         profile.families_saved_count += 1
         profile.save()
+        create_commission_for_lead(profile, lead)
     
     return lead
 
@@ -152,6 +192,7 @@ def update_lead(request, lead_id: int, payload: LeadUpdateSchema):
     if old_status != Lead.STATUS_RESGATE and lead.status == Lead.STATUS_RESGATE:
         profile.families_saved_count += 1
         profile.save()
+        create_commission_for_lead(profile, lead)
     # Decrementa se saiu de RESGATE
     elif old_status == Lead.STATUS_RESGATE and lead.status != Lead.STATUS_RESGATE:
         profile.families_saved_count = max(0, profile.families_saved_count - 1)
@@ -180,10 +221,11 @@ def move_lead(request, lead_id: int, payload: LeadMoveSchema):
         lead.status = payload.status
         lead.save()
         
-        # Atualiza contador de famílias salvas
+        # Atualiza contador de famílias salvas e cria comissão
         if old_status != Lead.STATUS_RESGATE and payload.status == Lead.STATUS_RESGATE:
             profile.families_saved_count += 1
             profile.save()
+            create_commission_for_lead(profile, lead)
         elif old_status == Lead.STATUS_RESGATE and payload.status != Lead.STATUS_RESGATE:
             profile.families_saved_count = max(0, profile.families_saved_count - 1)
             profile.save()
