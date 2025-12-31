@@ -26,11 +26,60 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* Tema Claro */
+:root.light {
+  color-scheme: light;
+  color: #1D1D1B;
+  background-color: #F2EFE9;
+  --color-background: #F2EFE9;
+  --color-surface: #FFFFFF;
+  --color-cream: #1D1D1B;
+  --color-sand: #4A3728;
+}
+
+:root.light body {
+  background-color: #F2EFE9;
+}
+
+:root.light .bg-background {
+  background-color: #F2EFE9 !important;
+}
+
+:root.light .bg-surface {
+  background-color: #FFFFFF !important;
+}
+
+:root.light .text-cream {
+  color: #1D1D1B !important;
+}
+
+:root.light .text-sand {
+  color: #4A3728 !important;
+}
+
+:root.light .border-primary\/30 {
+  border-color: rgba(120, 89, 66, 0.4) !important;
+}
+
+:root.light ::selection {
+  background-color: #785942;
+  color: #F2EFE9;
+}
+
+:root.light ::-webkit-scrollbar-track {
+  background: #F2EFE9;
+}
+
 body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
   background-color: #1D1D1B;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+:root.light body {
+  background-color: #F2EFE9;
 }
 
 * {

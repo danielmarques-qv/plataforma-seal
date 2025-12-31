@@ -3,6 +3,8 @@ import { RouterProvider } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { router } from './router'
 import { useAuthStore } from './stores/authStore'
+import { useThemeStore } from './stores/themeStore'
+import { ThemeToggle } from './components/ThemeToggle'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -16,10 +18,23 @@ const queryClient = new QueryClient({
 
 function AppInitializer({ children }: { children: React.ReactNode }) {
   const { initialize } = useAuthStore()
+  const { theme } = useThemeStore()
 
   useEffect(() => {
     initialize()
   }, [initialize])
+
+  // Aplica o tema ao carregar
+  useEffect(() => {
+    const root = document.documentElement
+    if (theme === 'light') {
+      root.classList.add('light')
+      root.classList.remove('dark')
+    } else {
+      root.classList.add('dark')
+      root.classList.remove('light')
+    }
+  }, [theme])
 
   return <>{children}</>
 }
@@ -29,6 +44,7 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <AppInitializer>
         <RouterProvider router={router} />
+        <ThemeToggle />
       </AppInitializer>
     </QueryClientProvider>
   )
