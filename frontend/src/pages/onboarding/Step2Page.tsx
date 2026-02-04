@@ -197,7 +197,7 @@ export function Step2Page() {
                 )}
 
                 {/* DEV ONLY - Botão de teste para treinamentos */}
-                {import.meta.env.DEV && availableModules.length > 0 && !allModulesCompleted && (
+                {import.meta.env.VITE_DEV_MODE === 'true' && availableModules.length > 0 && !allModulesCompleted && (
                   <div className="border-t border-primary/30 pt-3 mt-3">
                     <Button 
                       onClick={async () => {
@@ -280,7 +280,7 @@ export function Step2Page() {
                 )}
 
                 {/* DEV ONLY - Botão de teste */}
-                {import.meta.env.DEV && (
+                {import.meta.env.VITE_DEV_MODE === 'true' && (
                   <div className="border-t border-primary/30 pt-4 mt-4">
                     <p className="text-sand text-xs mb-2">🛠️ Modo Desenvolvimento:</p>
                     <Button 

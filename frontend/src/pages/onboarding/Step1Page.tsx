@@ -193,7 +193,7 @@ export function Step1Page() {
               )}
 
               {/* DEV ONLY - Botão de teste */}
-              {import.meta.env.DEV && (
+              {import.meta.env.VITE_DEV_MODE === 'true' && (
                 <div className="border-t border-primary/30 pt-4 mt-4">
                   <p className="text-sand text-xs mb-2">🛠️ Modo Desenvolvimento:</p>
                   <Button 
